@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f2a26">
+<title>CopyBox – คัดลอกและส่งต่อข้อความง่ายในปุ่มเดียว</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f2f5f3;
+  --card:#ffffff;
+  --ink:#0f2a26;
+  --text:#1b2b28;
+  --muted:#6b7c78;
+  --line:#dde5e1;
+  --soft:#e8f1ed;
+  --accent:#0f766e;
+  --accent-dark:#0b5a54;
+  --danger:#c62828;
+  --radius:18px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:"Prompt",-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",Tahoma,sans-serif;
+  line-height:1.5;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:max(28px,env(safe-area-inset-top)) 18px 60px}
+
+/* ---------- Header ---------- */
+.hero{padding:8px 0 26px}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{
+  width:54px;height:54px;border-radius:15px;background:var(--ink);color:#fff;
+  display:grid;place-items:center;font-size:26px;flex:0 0 auto;
+  box-shadow:0 8px 20px rgba(15,42,38,.22);
+}
+h1{
+  margin:0;font-size:clamp(44px,9vw,68px);line-height:1;font-weight:800;
+  letter-spacing:-.03em;color:var(--ink);
+}
+.slogan{
+  margin:14px 0 0;font-size:clamp(16px,2.6vw,19px);color:var(--muted);font-weight:400;max-width:560px;
+}
+
+/* ---------- Buttons ---------- */
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 0}
+.btn{
+  appearance:none;font:inherit;font-weight:600;font-size:15px;cursor:pointer;
+  border:1.5px solid var(--line);background:#fff;color:var(--text);
+  padding:12px 18px;border-radius:14px;display:inline-flex;align-items:center;gap:8px;
+  transition:transform .12s ease,background .15s ease,border-color .15s ease;
+}
+.btn:hover{border-color:#b9c8c2}
+.btn:active{transform:scale(.97)}
+.btn:focus-visible,.copy:focus-visible,.chip:focus-visible,.icon-btn:focus-visible,input:focus-visible,textarea:focus-visible{
+  outline:3px solid rgba(15,118,110,.35);outline-offset:2px;
+}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.primary:hover{background:#173a35}
+.btn.share{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.share:hover{background:var(--accent-dark)}
+.btn.editing{background:var(--soft);border-color:var(--accent);color:var(--accent-dark)}
+.btn.danger{color:var(--danger)}
+.btn.danger:hover{background:#fdf1f1;border-color:#f0c4c4}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+
+/* ---------- Banner (shared view) ---------- */
+.banner{
+  display:none;margin:0 0 16px;padding:14px 16px;border-radius:14px;
+  background:#e7f6f1;border:1px solid #b7e3d5;color:#0d4f47;font-size:14px;
+  align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.banner.show{display:flex}
+.banner .btn{padding:9px 14px;font-size:14px;border-color:#9fd5c5}
+
+/* ---------- Layout ---------- */
+.layout{display:grid;grid-template-columns:300px 1fr;gap:18px;align-items:start}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.side-head{
+  padding:16px 18px;border-bottom:1px solid var(--line);
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+}
+.side-head strong{font-size:15px}
+#count{font-size:13px;color:var(--muted);background:var(--soft);padding:3px 10px;border-radius:99px}
+.list{padding:10px;max-height:640px;overflow:auto;display:flex;flex-direction:column;gap:4px}
+.item{display:flex;align-items:stretch;gap:4px}
+.chip{
+  flex:1;min-width:0;text-align:left;font:inherit;font-size:15px;color:var(--text);
+  border:0;background:transparent;padding:12px 14px;border-radius:12px;cursor:pointer;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.chip:hover{background:#f3f7f5}
+.item.active .chip{background:var(--soft);color:var(--accent-dark);font-weight:700}
+.icon-btn{
+  flex:0 0 40px;border:0;background:transparent;color:var(--danger);font-size:18px;border-radius:12px;cursor:pointer;
+}
+.icon-btn:hover{background:#fdf1f1}
+
+.main{padding:22px}
+.field{margin-bottom:18px}
+.label{font-weight:700;font-size:14px;margin-bottom:8px;display:block;color:var(--ink)}
+input,textarea{
+  width:100%;border:1.5px solid var(--line);border-radius:14px;padding:13px 14px;
+  font:inherit;font-size:16px;background:#fff;color:var(--text);
+}
+input[readonly],textarea[readonly]{background:#f8faf9;cursor:default}
+textarea{min-height:400px;resize:vertical;line-height:1.7}
+.hint{font-size:13px;color:var(--muted);margin-top:8px}
+.copy{
+  width:100%;padding:16px;border:0;border-radius:16px;background:var(--accent);color:#fff;
+  font:inherit;font-weight:700;font-size:17px;cursor:pointer;
+  transition:transform .12s ease,background .15s ease;
+}
+.copy:hover{background:var(--accent-dark)}
+.copy:active{transform:scale(.985)}
+
+.empty{padding:56px 20px;text-align:center;color:var(--muted)}
+.empty .big{font-size:44px;margin-bottom:8px}
+.empty p{margin:0 0 20px;font-size:15px}
+.list-empty{padding:22px 14px;text-align:center;color:var(--muted);font-size:14px}
+
+/* ---------- Share modal ---------- */
+.overlay{
+  position:fixed;inset:0;background:rgba(15,42,38,.55);display:none;
+  align-items:center;justify-content:center;padding:18px;z-index:50;
+}
+.overlay.show{display:flex}
+.modal{
+  background:#fff;border-radius:22px;padding:24px;width:100%;max-width:520px;
+  box-shadow:0 30px 80px rgba(0,0,0,.3);
+}
+.modal h2{margin:0 0 6px;font-size:22px;color:var(--ink)}
+.modal p{margin:0 0 16px;color:var(--muted);font-size:14px}
+.linkbox{font-size:14px;margin-bottom:12px}
+.modal .row{display:flex;gap:10px;flex-wrap:wrap}
+.modal .row .btn{flex:1;justify-content:center}
+.warn{margin-top:12px;font-size:12.5px;color:#8a5a00;background:#fff6e0;border-radius:10px;padding:9px 12px;display:none}
+.warn.show{display:block}
+.close{margin-top:14px;width:100%;justify-content:center}
+
+/* ---------- Toast ---------- */
+.toast{
+  position:fixed;left:50%;bottom:max(28px,env(safe-area-inset-bottom));transform:translate(-50%,30px);
+  background:var(--ink);color:#fff;padding:12px 20px;border-radius:99px;font-size:15px;font-weight:500;
+  opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;z-index:60;max-width:90vw;text-align:center;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- Mobile ---------- */
+@media(max-width:780px){
+  .wrap{padding-left:14px;padding-right:14px}
+  .layout{grid-template-columns:1fr}
+  .list{flex-direction:row;overflow-x:auto;max-height:none;padding:10px;gap:8px}
+  .item{flex:0 0 auto;background:#f6f9f8;border-radius:12px;max-width:220px}
+  .item.active{background:var(--soft)}
+  .chip{padding:11px 14px;max-width:170px}
+  .icon-btn{flex-basis:34px}
+  .main{padding:16px}
+  textarea{min-height:340px}
+  .actions .btn{flex:1 1 calc(50% - 10px);justify-content:center}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">📋</div>
+      <h1>CopyBox</h1>
+    </div>
+    <p class="slogan">ทำให้การคัดลอกข้อความของคุณ ส่งต่อให้คนอื่นได้ง่ายขึ้นในปุ่มเดียว</p>
+
+    <div class="actions" id="actions">
+      <button class="btn primary" id="btnAdd" onclick="addSlide()">＋ เพิ่มหัวข้อ</button>
+      <button class="btn share" id="btnShare" onclick="shareVersion()">🔗 แชร์เนื้อหานี้</button>
+      <button class="btn" id="btnEdit" onclick="toggleEdit()">⚙️ <span id="editLabel">แก้ไข</span></button>
+      <button class="btn danger" id="btnReset" onclick="resetAll()">รีเซ็ต</button>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" role="status">
+    <span>👀 คุณกำลังดูเนื้อหาที่มีคนแชร์ให้ — กดคัดลอกได้เลย</span>
+    <button class="btn" onclick="saveSharedAsMine()">บันทึกไว้ในเครื่องนี้เพื่อแก้ไข</button>
+  </div>
+
+  <div class="layout">
+    <section class="panel">
+      <div class="side-head"><strong>เลือกหัวข้อ</strong><span id="count"></span></div>
+      <div id="list" class="list"></div>
+    </section>
+
+    <section class="panel">
+      <div id="editor" class="main"></div>
+    </section>
+  </div>
+</div>
+
+<!-- Share modal -->
+<div id="overlay" class="overlay" onclick="if(event.target===this)closeShare()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+    <h2 id="shareTitle">ลิงก์สำหรับแชร์พร้อมแล้ว</h2>
+    <p>ส่งลิงก์นี้ให้เพื่อน เขาจะเห็นเนื้อหาชุดเดียวกับที่คุณแชร์</p>
+    <input id="shareLink" class="linkbox" readonly onfocus="this.select()" onclick="this.select()">
+    <div class="row">
+      <button class="btn share" onclick="copyLink()">📋 คัดลอกลิงก์</button>
+      <button class="btn" id="btnNativeShare" onclick="nativeShare()" style="display:none">📤 ส่งผ่านแอป</button>
+    </div>
+    <div id="lenWarn" class="warn"></div>
+    <button class="btn close" onclick="closeShare()">ปิด</button>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status"></div>
+
+<script>
+const STORE_KEY = 'copyboxSlides';
+const SEL_KEY = 'copyboxSelected';
+
+let slides = [];
+let selected = 0;
+let editing = false;
+let sharedView = false;   // true เมื่อเปิดจากลิงก์ที่คนอื่นแชร์มา
+let currentLink = '';
+
+/* ---------- Safe storage (ไม่พังถ้าเบราว์เซอร์บล็อก) ---------- */
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
+/* ---------- Base64url + gzip ---------- */
+function bytesToB64url(bytes){
+  let bin = '';
+  const CH = 0x8000;
+  for(let i=0;i<bytes.length;i+=CH){
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i+CH));
+  }
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function b64urlToBytes(s){
+  s = s.replace(/-/g,'+').replace(/_/g,'/');
+  while(s.length % 4) s += '=';
+  const bin = atob(s);
+  const bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+async function encodeData(obj){
+  const json = JSON.stringify(obj);
+  const raw = new TextEncoder().encode(json);
+  if('CompressionStream' in window){
+    try{
+      const stream = new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'));
+      const buf = new Uint8Array(await new Response(stream).arrayBuffer());
+      return 'z.' + bytesToB64url(buf);
+    }catch(e){}
+  }
+  return 'p.' + bytesToB64url(raw);
+}
+async function decodeData(str){
+  const kind = str.slice(0,2);
+  const body = str.slice(2);
+  const bytes = b64urlToBytes(body);
+  if(kind === 'z.'){
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    return JSON.parse(await new Response(stream).text());
+  }
+  if(kind === 'p.'){
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+  throw new Error('bad format');
+}
+
+/* ---------- Load ---------- */
+function applyShared(parsed){
+  slides = parsed.map(s => ({title:String(s.title ?? ''), prompt:String(s.prompt ?? '')}));
+  sharedView = true;
+  selected = 0;
+  render();
+}
+async function loadData(){
+  const h = location.hash;
+
+  // ลิงก์สั้น (เก็บบนเซิร์ฟเวอร์)
+  if(h.startsWith('#id=')){
+    toast('กำลังโหลดเนื้อหา...');
+    try{
+      const r = await fetch('/api/get?id=' + encodeURIComponent(h.slice(4)));
+      if(!r.ok) throw new Error('not found');
+      const parsed = await r.json();
+      if(Array.isArray(parsed)){ applyShared(parsed); toast('โหลดเนื้อหาแล้ว ✓'); return; }
+    }catch(e){
+      toast('เปิดลิงก์นี้ไม่ได้ ลิงก์อาจผิดหรือหมดอายุ');
+    }
+  }
+
+  // ลิงก์ยาว (เก็บข้อมูลไว้ในลิงก์เอง)
+  if(h.startsWith('#v=')){
+    try{
+      const parsed = await decodeData(decodeURIComponent(h.slice(3)));
+      if(Array.isArray(parsed)){ applyShared(parsed); return; }
+    }catch(e){
+      toast('เปิดลิงก์นี้ไม่ได้ ลิงก์อาจไม่ครบหรือเสียหาย');
+    }
+  }
+
+  try{
+    const saved = JSON.parse(lsGet(STORE_KEY) || 'null');
+    slides = Array.isArray(saved) ? saved : [];
+  }catch(e){ slides = []; }
+  selected = Number(lsGet(SEL_KEY) || 0);
+  render();
+}
+
+function save(){
+  if(sharedView) return;
+  lsSet(STORE_KEY, JSON.stringify(slides));
+  lsSet(SEL_KEY, String(selected));
+}
+
+/* ---------- Render ---------- */
+function esc(v){
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function render(){
+  if(selected >= slides.length) selected = slides.length - 1;
+  if(selected < 0) selected = 0;
+
+  // ปุ่มด้านบน
+  const own = !sharedView;
+  document.getElementById('btnAdd').style.display   = own ? '' : 'none';
+  document.getElementById('btnEdit').style.display  = own ? '' : 'none';
+  document.getElementById('btnReset').style.display = own ? '' : 'none';
+  document.getElementById('btnShare').style.display = own ? '' : 'none';
+  document.getElementById('banner').classList.toggle('show', sharedView);
+  document.getElementById('btnEdit').classList.toggle('editing', editing);
+  document.getElementById('editLabel').textContent = editing ? 'เสร็จสิ้น' : 'แก้ไข';
+
+  document.getElementById('count').textContent = slides.length + ' หัวข้อ';
+
+  // รายการ
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  if(!slides.length){
+    list.innerHTML = '<div class="list-empty">ยังไม่มีหัวข้อ</div>';
+  }
+  slides.forEach((s,i) => {
+    const row = document.createElement('div');
+    row.className = 'item' + (i === selected ? ' active' : '');
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.textContent = (i+1) + '. ' + (s.title || 'ไม่มีชื่อ');
+    b.onclick = () => { selected = i; save(); render(); };
+    row.append(b);
+    if(own && editing){
+      const x = document.createElement('button');
+      x.className = 'icon-btn';
+      x.textContent = '×';
+      x.title = 'ลบหัวข้อนี้';
+      x.setAttribute('aria-label','ลบหัวข้อนี้');
+      x.onclick = () => removeSlide(i);
+      row.append(x);
+    }
+    list.append(row);
+  });
+
+  // ตัวแก้ไข
+  const ed = document.getElementById('editor');
+  if(!slides.length){
+    ed.innerHTML = `
+      <div class="empty">
+        <div class="big">📭</div>
+        <p>ยังไม่มีเนื้อหา กด “เพิ่มหัวข้อ” เพื่อเริ่มต้น</p>
+        ${own ? '<button class="btn primary" onclick="addSlide()">＋ เพิ่มหัวข้อแรก</button>' : ''}
+      </div>`;
+    return;
+  }
+  const s = slides[selected];
+  const ro = (own && editing) ? '' : 'readonly';
+  ed.innerHTML = `
+    <div class="field">
+      <label class="label" for="title">เนื้อหา</label>
+      <input id="title" value="${esc(s.title)}" ${ro} oninput="updateTitle(this.value)">
+    </div>
+    <div class="field">
+      <label class="label" for="prompt">รายละเอียดเนื้อหา</label>
+      <textarea id="prompt" ${ro} oninput="updatePrompt(this.value)">${esc(s.prompt)}</textarea>
+      <div class="hint">${
+        sharedView ? 'กดปุ่มด้านล่างเพื่อคัดลอกข้อความทั้งหมดได้ทันที'
+        : editing ? 'แก้ไขเสร็จแล้วกด “แชร์เนื้อหานี้” เพื่อให้เพื่อนเห็นเนื้อหาชุดนี้'
+        : 'กด “แก้ไข” เพื่อแก้ชื่อหรือรายละเอียดเนื้อหา'
+      }</div>
+    </div>
+    <button class="copy" onclick="copyPrompt()">📋 คัดลอกเนื้อหานี้</button>
+  `;
+}
+
+/* ---------- Actions ---------- */
+function updateTitle(v){
+  slides[selected].title = v; save();
+  const chips = document.querySelectorAll('#list .chip');
+  if(chips[selected]) chips[selected].textContent = (selected+1) + '. ' + (v || 'ไม่มีชื่อ');
+}
+function updatePrompt(v){ slides[selected].prompt = v; save(); }
+
+function addSlide(){
+  slides.push({title:'หัวข้อใหม่ ' + (slides.length+1), prompt:''});
+  selected = slides.length - 1;
+  editing = true;
+  save(); render();
+  const t = document.getElementById('title');
+  if(t){ t.focus(); t.select(); }
+}
+function removeSlide(i){
+  if(!confirm('ลบหัวข้อนี้ใช่ไหม?')) return;
+  slides.splice(i,1);
+  selected = Math.max(0, Math.min(selected, slides.length-1));
+  save(); render();
+}
+function toggleEdit(){ editing = !editing; render(); }
+
+function resetAll(){
+  if(!confirm('ลบเนื้อหาทั้งหมดในเครื่องนี้ใช่ไหม? (จะเหลือ 0 หัวข้อ)')) return;
+  slides = [];
+  selected = 0;
+  editing = false;
+  lsSet(STORE_KEY, '[]');
+  lsSet(SEL_KEY, '0');
+  if(location.hash) history.replaceState(null,'',location.pathname + location.search);
+  render();
+  toast('ล้างเนื้อหาทั้งหมดแล้ว');
+}
+
+function saveSharedAsMine(){
+  if(!confirm('บันทึกเนื้อหานี้ไว้ในเครื่องคุณ? (จะแทนที่เนื้อหาเดิมที่เคยเก็บไว้ในเครื่องนี้)')) return;
+  sharedView = false;
+  save();
+  history.replaceState(null,'',location.pathname + location.search);
+  render();
+  toast('บันทึกแล้ว ตอนนี้แก้ไขได้เลย ✓');
+}
+
+/* ---------- Copy ---------- */
+async function writeClipboard(text){
+  if(navigator.clipboard && window.isSecureContext){
+    try{ await navigator.clipboard.writeText(text); return true; }catch(e){}
+  }
+  try{
+    const t = document.createElement('textarea');
+    t.value = text;
+    t.setAttribute('readonly','');
+    t.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
+    document.body.appendChild(t);
+    t.focus(); t.select(); t.setSelectionRange(0, t.value.length);
+    const ok = document.execCommand('copy');
+    t.remove();
+    return ok;
+  }catch(e){ return false; }
+}
+async function copyPrompt(){
+  if(!slides.length) return;
+  const ok = await writeClipboard(slides[selected].prompt || '');
+  toast(ok ? 'คัดลอกเนื้อหาแล้ว ✓' : 'คัดลอกไม่สำเร็จ ลองกดค้างที่ข้อความแล้วเลือกคัดลอก');
+}
+
+/* ---------- Share ---------- */
+async function shareVersion(){
+  if(!slides.length){ toast('ยังไม่มีเนื้อหาให้แชร์ กด “เพิ่มหัวข้อ” ก่อน'); return; }
+  save();
+  const btn = document.getElementById('btnShare');
+  btn.disabled = true;
+  const base = location.href.split('#')[0];
+  try{
+    // ลองทำลิงก์สั้นผ่านเซิร์ฟเวอร์ก่อน
+    const r = await fetch('/api/save', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(slides)
+    });
+    if(!r.ok) throw new Error('save failed');
+    const data = await r.json();
+    if(!data.id) throw new Error('no id');
+    currentLink = base + '#id=' + data.id;
+  }catch(e){
+    // ถ้าเซิร์ฟเวอร์ใช้ไม่ได้ ใช้ลิงก์ยาวแทน (ยังใช้งานได้เหมือนเดิม)
+    try{
+      currentLink = base + '#v=' + await encodeData(slides);
+    }catch(e2){
+      btn.disabled = false;
+      toast('สร้างลิงก์ไม่สำเร็จ ลองใหม่อีกครั้ง');
+      return;
+    }
+  }
+  btn.disabled = false;
+
+  document.getElementById('shareLink').value = currentLink;
+  document.getElementById('btnNativeShare').style.display = navigator.share ? '' : 'none';
+  const warn = document.getElementById('lenWarn');
+  if(currentLink.length > 6000){
+    warn.textContent = 'ลิงก์ค่อนข้างยาว (' + currentLink.length.toLocaleString() + ' ตัวอักษร) แอปแชทบางตัวอาจตัดลิงก์ ถ้าเพื่อนเปิดไม่ได้ ให้ลองแบ่งเป็นหลายลิงก์';
+    warn.classList.add('show');
+  }else{
+    warn.classList.remove('show');
+  }
+  document.getElementById('overlay').classList.add('show');
+
+  // พยายามคัดลอกให้อัตโนมัติ (ถ้าไม่สำเร็จ ผู้ใช้กดปุ่มคัดลอกในหน้าต่างได้)
+  const ok = await writeClipboard(currentLink);
+  if(ok) toast('คัดลอกลิงก์แล้ว ✓ ส่งให้เพื่อนได้เลย');
+}
+async function copyLink(){
+  const ok = await writeClipboard(currentLink);
+  if(ok){ toast('คัดลอกลิงก์แล้ว ✓'); }
+  else{
+    const i = document.getElementById('shareLink');
+    i.focus(); i.select(); i.setSelectionRange(0, i.value.length);
+    toast('เลือกลิงก์ให้แล้ว กดค้างแล้วเลือก “คัดลอก”');
+  }
+}
+async function nativeShare(){
+  try{ await navigator.share({title:'CopyBox', url:currentLink}); }catch(e){}
+}
+function closeShare(){ document.getElementById('overlay').classList.remove('show'); }
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeShare(); });
+
+/* ---------- Toast ---------- */
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+window.addEventListener('hashchange', () => { if(location.hash.startsWith('#v=') || location.hash.startsWith('#id=')) loadData(); });
+loadData();
+</script>
+</body>
+</html>
